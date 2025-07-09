@@ -1,0 +1,34 @@
+[Unit]
+Description=The Mirage Discord Bot
+Documentation=https://themirage.xxx/docs
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=linuxuser
+Group=linuxuser
+WorkingDirectory=/home/linuxuser/mirage-community
+Environment="NODE_ENV=production"
+ExecStart=/usr/bin/npm run start:bot
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/linuxuser/mirage-community/logs
+ReadWritePaths=/tmp
+
+# Resource limits
+LimitNOFILE=4096
+LimitNPROC=256
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mirage-bot
+
+[Install]
+WantedBy=multi-user.target 

@@ -1,0 +1,40 @@
+# Dockerfile for Discord Bot
+
+FROM node:18-alpine
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy bot source code
+COPY bot ./bot
+COPY src/lib ./src/lib
+COPY tsconfig.json ./
+
+# Compile TypeScript
+RUN npx tsc --project tsconfig.json --outDir dist
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Create logs directory
+RUN mkdir -p logs
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S botuser -u 1001
+RUN chown -R botuser:nodejs /app
+
+# Switch to non-root user
+USER botuser
+
+# Start the bot
+CMD ["node", "dist/bot/index.js"] 

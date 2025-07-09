@@ -1,0 +1,21 @@
+HTTP/1.1 302 Found
+Server: nginx/1.22.1
+Date: Mon, 07 Jul 2025 07:29:49 GMT
+Transfer-Encoding: chunked
+Connection: keep-alive
+X-DNS-Prefetch-Control: on
+X-XSS-Protection: 1; mode=block
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Cache-Control: no-store, max-age=0
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch
+location: /auth/signin?callbackUrl=http%3A%2F%2Fthemirage.xxx&error=discord
+set-cookie: next-auth.csrf-token=6b55ddfb48609b7cc5f84b29612730a16d7bdc194a9c36aec3e93e7ac229bdf8%7C43c2cf4b215cc38879474ad9658ebab97a96a2027d8cbfa1aeb9dc138e6d83af; Path=/; HttpOnly; SameSite=Lax
+set-cookie: next-auth.callback-url=http%3A%2F%2Fthemirage.xxx; Path=/; HttpOnly; SameSite=Lax
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+Referrer-Policy: strict-origin-when-cross-origin
+

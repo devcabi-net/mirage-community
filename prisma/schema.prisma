@@ -1,0 +1,281 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model with Discord OAuth integration
+model User {
+  id              String    @id @default(cuid())
+  discordId       String    @unique
+  username        String
+  discriminator   String
+  email           String?   @unique
+  avatar          String?
+  banner          String?
+  accentColor     Int?
+  locale          String?
+  verified        Boolean   @default(false)
+  emailVerified   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  sessions        Session[]
+  accounts        Account[]
+  artworks        Artwork[]
+  comments        Comment[]
+  likes           Like[]
+  moderationLogs  ModerationLog[]
+  sftpAccess      SftpAccess?
+  discordRoles    UserDiscordRole[]
+  
+  @@index([discordId])
+  @@index([email])
+}
+
+// NextAuth.js models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+}
+
+// Discord server data
+model DiscordGuild {
+  id              String    @id @unique // Discord guild ID
+  name            String
+  icon            String?
+  memberCount     Int       @default(0)
+  onlineCount     Int       @default(0)
+  messagesPerMin  Float     @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  moderationLogs  ModerationLog[]
+  roles           DiscordRole[]
+  stats           GuildStats[]
+}
+
+model DiscordRole {
+  id          String    @id // Discord role ID
+  guildId     String
+  name        String
+  color       Int
+  position    Int
+  permissions String    // BigInt as string
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  guild       DiscordGuild      @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  users       UserDiscordRole[]
+  
+  @@unique([id, guildId])
+  @@index([guildId])
+}
+
+model UserDiscordRole {
+  userId      String
+  roleId      String
+  guildId     String
+  assignedAt  DateTime  @default(now())
+  
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        DiscordRole  @relation(fields: [roleId, guildId], references: [id, guildId], onDelete: Cascade)
+  
+  @@id([userId, roleId, guildId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+// Guild statistics for tracking
+model GuildStats {
+  id              String    @id @default(cuid())
+  guildId         String
+  memberCount     Int
+  onlineCount     Int
+  messageCount    Int
+  voiceMinutes    Int       @default(0)
+  timestamp       DateTime  @default(now())
+  
+  guild           DiscordGuild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  
+  @@index([guildId, timestamp])
+}
+
+// Art repository models
+model Artwork {
+  id              String    @id @default(cuid())
+  userId          String
+  title           String
+  description     String?
+  filename        String
+  fileUrl         String
+  thumbnailUrl    String?
+  fileSize        Int
+  mimeType        String
+  width           Int?
+  height          Int?
+  tags            Tag[]
+  nsfw            Boolean   @default(false)
+  published       Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments        Comment[]
+  likes           Like[]
+  moderationFlags ModerationFlag[]
+  
+  @@index([userId])
+  @@index([published, createdAt])
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  artworks  Artwork[]
+  
+  @@index([name])
+}
+
+model Comment {
+  id          String    @id @default(cuid())
+  userId      String
+  artworkId   String
+  content     String    @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artwork     Artwork   @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  
+  @@index([artworkId])
+  @@index([userId])
+}
+
+model Like {
+  userId      String
+  artworkId   String
+  createdAt   DateTime  @default(now())
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artwork     Artwork   @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  
+  @@id([userId, artworkId])
+  @@index([artworkId])
+  @@index([userId])
+}
+
+// Moderation models
+model ModerationLog {
+  id            String    @id @default(cuid())
+  guildId       String
+  userId        String    // ID of the user being moderated
+  moderatorId   String    // ID of the moderator
+  action        ModAction
+  reason        String?
+  duration      Int?      // Duration in seconds for temporary actions
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  
+  guild         DiscordGuild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  moderator     User         @relation(fields: [moderatorId], references: [id])
+  
+  @@index([guildId, userId])
+  @@index([moderatorId])
+  @@index([action])
+  @@index([expiresAt])
+}
+
+model ModerationFlag {
+  id            String    @id @default(cuid())
+  artworkId     String?
+  messageId     String?   // Discord message ID
+  content       String    @db.Text
+  flagType      FlagType
+  severity      Float     // 0.0 to 1.0
+  apiResponse   Json      // Raw API response from OpenAI/Perspective
+  resolved      Boolean   @default(false)
+  resolvedBy    String?
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  
+  artwork       Artwork?  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  
+  @@index([resolved, createdAt])
+  @@index([flagType])
+  @@index([artworkId])
+}
+
+// SFTP access management
+model SftpAccess {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  username      String    @unique
+  publicKey     String?   @db.Text
+  passwordHash  String?
+  homeDirectory String
+  permissions   Json      // Array of permission objects
+  enabled       Boolean   @default(true)
+  lastAccess    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([username])
+  @@index([enabled])
+}
+
+// Enums
+enum ModAction {
+  WARN
+  MUTE
+  KICK
+  BAN
+  UNBAN
+  UNMUTE
+}
+
+enum FlagType {
+  HATE_SPEECH
+  HARASSMENT
+  SPAM
+  NSFW
+  VIOLENCE
+  SELF_HARM
+  OTHER
+} 
