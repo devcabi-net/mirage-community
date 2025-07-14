@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Status Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        .overall-status {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid #10b981;
+        }
+
+        .overall-status.degraded {
+            border-left-color: #f59e0b;
+        }
+
+        .overall-status.unhealthy {
+            border-left-color: #ef4444;
+        }
+
+        .overall-status h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-icon {
+            width: 24px;
+            height: 24px;
+            display: inline-block;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e5e7eb;
+        }
+
+        .service-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .service-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .status-badge.healthy {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.unhealthy {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-badge.unknown {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .service-details {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .service-details div {
+            margin-bottom: 0.5rem;
+        }
+
+        .refresh-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background-color 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #2563eb;
+        }
+
+        .refresh-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 1.1rem;
+            color: #6b7280;
+        }
+
+        .spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            color: #991b1b;
+        }
+
+        .footer {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 2rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .last-updated {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>System Status Dashboard</h1>
+            <p>Real-time monitoring of all project services</p>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            Loading system status...
+        </div>
+
+        <div id="content" style="display: none;">
+            <div id="overall-status" class="overall-status">
+                <h2>
+                    <span class="status-icon">✅</span>
+                    <span id="overall-text">All Systems Operational</span>
+                </h2>
+                <p id="overall-description">All services are running normally</p>
+            </div>
+
+            <div class="controls">
+                <h2>Service Status</h2>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span class="last-updated" id="last-updated"></span>
+                    <button class="refresh-btn" id="refresh-btn" onclick="fetchStatus()">
+                        <span id="refresh-icon">🔄</span>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="services-grid" id="services-grid">
+                <!-- Services will be populated here -->
+            </div>
+
+            <div id="error-message" class="error" style="display: none;"></div>
+        </div>
+
+        <div class="footer">
+            <p>This dashboard automatically refreshes every 30 seconds</p>
+        </div>
+    </div>
+
+    <script>
+        let refreshInterval;
+        let isLoading = false;
+
+        // Mock data for demonstration - in production this would come from actual service checks
+        const mockServices = [
+            {
+                name: 'Next.js Web Application',
+                status: 'healthy',
+                responseTime: 45,
+                uptime: '2h 15m',
+                lastCheck: new Date().toISOString(),
+                details: 'Application is running normally'
+            },
+            {
+                name: 'PostgreSQL Database',
+                status: 'healthy',
+                responseTime: 12,
+                lastCheck: new Date().toISOString(),
+                details: 'Database connection successful'
+            },
+            {
+                name: 'Redis Cache',
+                status: 'healthy',
+                responseTime: 8,
+                lastCheck: new Date().toISOString(),
+                details: 'Cache server operational'
+            },
+            {
+                name: 'Discord Bot',
+                status: 'healthy',
+                responseTime: 156,
+                lastCheck: new Date().toISOString(),
+                details: 'Bot is online and responsive'
+            },
+            {
+                name: 'File System',
+                status: 'healthy',
+                responseTime: 3,
+                lastCheck: new Date().toISOString(),
+                details: 'Upload and log directories accessible'
+            },
+            {
+                name: 'Nginx Reverse Proxy',
+                status: 'healthy',
+                responseTime: 25,
+                lastCheck: new Date().toISOString(),
+                details: 'Proxy server operational'
+            }
+        ];
+
+        function getStatusIcon(status) {
+            switch(status) {
+                case 'healthy': return '✅';
+                case 'unhealthy': return '❌';
+                case 'unknown': return '⚠️';
+                default: return '❓';
+            }
+        }
+
+        function getOverallStatus(services) {
+            const healthyCount = services.filter(s => s.status === 'healthy').length;
+            const totalCount = services.length;
+            
+            if (healthyCount === totalCount) {
+                return {
+                    status: 'healthy',
+                    text: 'All Systems Operational',
+                    description: 'All services are running normally',
+                    icon: '✅'
+                };
+            } else if (healthyCount > totalCount / 2) {
+                return {
+                    status: 'degraded',
+                    text: 'Degraded Performance',
+                    description: 'Some services are experiencing issues',
+                    icon: '⚠️'
+                };
+            } else {
+                return {
+                    status: 'unhealthy',
+                    text: 'Major Outage',
+                    description: 'Multiple services are down',
+                    icon: '❌'
+                };
+            }
+        }
+
+        function renderServices(services) {
+            const grid = document.getElementById('services-grid');
+            grid.innerHTML = '';
+
+            services.forEach(service => {
+                const card = document.createElement('div');
+                card.className = 'service-card';
+                
+                card.innerHTML = `
+                    <div class="service-header">
+                        <h3 class="service-name">${service.name}</h3>
+                        <div class="status-badge ${service.status}">
+                            ${getStatusIcon(service.status)}
+                            ${service.status.charAt(0).toUpperCase() + service.status.slice(1)}
+                        </div>
+                    </div>
+                    <div class="service-details">
+                        ${service.responseTime ? `<div>⏱️ Response time: ${service.responseTime}ms</div>` : ''}
+                        ${service.uptime ? `<div>📈 Uptime: ${service.uptime}</div>` : ''}
+                        <div>🔄 Last checked: ${new Date(service.lastCheck).toLocaleString()}</div>
+                        ${service.details ? `<div style="margin-top: 0.5rem; padding: 0.75rem; background: #f9fafb; border-radius: 6px; color: #374151;">${service.details}</div>` : ''}
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        function updateOverallStatus(services) {
+            const overall = getOverallStatus(services);
+            const statusDiv = document.getElementById('overall-status');
+            const textSpan = document.getElementById('overall-text');
+            const descriptionP = document.getElementById('overall-description');
+            const iconSpan = statusDiv.querySelector('.status-icon');
+            
+            statusDiv.className = `overall-status ${overall.status}`;
+            textSpan.textContent = overall.text;
+            descriptionP.textContent = overall.description;
+            iconSpan.textContent = overall.icon;
+        }
+
+        async function fetchStatus() {
+            if (isLoading) return;
+            
+            isLoading = true;
+            const refreshBtn = document.getElementById('refresh-btn');
+            const refreshIcon = document.getElementById('refresh-icon');
+            
+            refreshBtn.disabled = true;
+            refreshIcon.style.animation = 'spin 1s linear infinite';
+            
+            try {
+                // Fetch real status from API
+                const response = await fetch('/api/status');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const statusData = await response.json();
+                
+                renderServices(statusData.services);
+                updateOverallStatus(statusData.services);
+                
+                document.getElementById('last-updated').textContent = 
+                    `Last updated: ${new Date().toLocaleString()}`;
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                document.getElementById('error-message').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Failed to fetch status:', error);
+                
+                // Fall back to mock data if API fails
+                const services = mockServices.map(service => ({
+                    ...service,
+                    lastCheck: new Date().toISOString(),
+                    responseTime: Math.floor(Math.random() * 200) + 10
+                }));
+                
+                renderServices(services);
+                updateOverallStatus(services);
+                
+                document.getElementById('last-updated').textContent = 
+                    `Last updated: ${new Date().toLocaleString()} (using mock data)`;
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
+                document.getElementById('error-message').textContent = 
+                    `API Error: ${error.message}. Showing mock data.`;
+                document.getElementById('error-message').style.display = 'block';
+            } finally {
+                isLoading = false;
+                refreshBtn.disabled = false;
+                refreshIcon.style.animation = 'none';
+            }
+        }
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchStatus();
+            
+            // Set up auto-refresh every 30 seconds
+            refreshInterval = setInterval(fetchStatus, 30000);
+        });
+
+        // Clean up interval on page unload
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>
