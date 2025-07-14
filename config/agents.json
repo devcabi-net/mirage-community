@@ -1,0 +1,94 @@
+{
+  "agents": [
+    {
+      "name": "code-review",
+      "description": "Automated code review and quality checks",
+      "schedule": "0 9 * * *",
+      "tasks": [
+        "Run ESLint and fix auto-fixable issues",
+        "Check for TypeScript errors",
+        "Run tests and ensure coverage > 80%",
+        "Create PR with fixes if any issues found"
+      ],
+      "enabled": true
+    },
+    {
+      "name": "dependency-update",
+      "description": "Update npm dependencies weekly",
+      "schedule": "0 10 * * 0",
+      "tasks": [
+        "Check for outdated dependencies",
+        "Update packages to latest compatible versions",
+        "Run full test suite",
+        "Create PR if all tests pass"
+      ],
+      "enabled": true
+    },
+    {
+      "name": "security-scan",
+      "description": "Nightly security audit",
+      "schedule": "0 2 * * *",
+      "tasks": [
+        "Run npm audit",
+        "Check for security vulnerabilities",
+        "Update vulnerable packages",
+        "Create security report"
+      ],
+      "enabled": true
+    },
+    {
+      "name": "performance-monitor",
+      "description": "Monitor and optimize performance",
+      "schedule": "0 12 * * 1",
+      "tasks": [
+        "Analyze bundle size",
+        "Check for performance regressions",
+        "Optimize images and assets",
+        "Update performance metrics"
+      ],
+      "enabled": true
+    },
+    {
+      "name": "database-maintenance",
+      "description": "Database optimization and cleanup",
+      "schedule": "0 3 * * 0",
+      "tasks": [
+        "Optimize database queries",
+        "Clean up old logs",
+        "Update database statistics",
+        "Check for orphaned records"
+      ],
+      "enabled": true
+    },
+    {
+      "name": "bot-health-check",
+      "description": "Discord bot health monitoring",
+      "schedule": "0 */6 * * *",
+      "tasks": [
+        "Check bot connectivity",
+        "Verify command functionality",
+        "Monitor guild statistics",
+        "Check for rate limiting issues"
+      ],
+      "enabled": true
+    }
+  ],
+  "settings": {
+    "timezone": "UTC",
+    "maxConcurrentAgents": 3,
+    "defaultTimeout": 300000,
+    "retryAttempts": 2,
+    "notifications": {
+      "slack": {
+        "enabled": true,
+        "onSuccess": true,
+        "onFailure": true,
+        "onWarning": true
+      },
+      "email": {
+        "enabled": false,
+        "recipients": []
+      }
+    }
+  }
+}
