@@ -1,338 +1,239 @@
 # The Mirage Community Platform
 
-A full-stack community backend built with TypeScript, Next.js 14, Discord.js, and PostgreSQL for themirage.xxx.
+A full-stack community platform built with Next.js 15 RC, Discord.js 14, and PostgreSQL, featuring Discord integration, art gallery, moderation system, and SFTP access.
 
-## 🚀 Features
+## 🏗️ Architecture
 
-### Discord Integration
-- **OAuth2 Authentication**: Sign in with Discord
-- **Real-time Bot**: Moderation commands, stats tracking, and auto-moderation
-- **Role Sync**: Discord roles mapped to platform permissions
-- **Server Statistics**: Live member count, online users, and message analytics
+### Tech Stack
+- **Frontend**: Next.js 15 RC, React 19 RC, TypeScript, Tailwind CSS
+- **Backend**: PostgreSQL 15, Prisma ORM, NextAuth.js
+- **Discord Bot**: Discord.js 14 with slash commands
+- **Graphics**: Three.js, React Three Fiber
+- **UI Components**: Radix UI, Framer Motion
+- **Image Processing**: Sharp
+- **Content Moderation**: OpenAI API, Perspective API (fallback)
+- **Development**: Vitest, Playwright, ESLint, Prettier
 
-### Art Gallery
-- **Secure Uploads**: Local storage with image processing
-- **Tagging System**: Organize artwork with tags
-- **Engagement**: Likes and comments on artworks
-- **Moderation**: NSFW flagging and content moderation
+### Core Features Implemented
 
-### Moderation System
-- **Auto-moderation**: OpenAI/Perspective API integration
+#### 🎨 Art Gallery
+- **File Upload**: Secure local storage with image processing
+- **Image Processing**: Sharp for thumbnails and optimization
+- **Tagging System**: Organize artwork with searchable tags
+- **NSFW Flagging**: Community-driven content classification
+- **Moderation Integration**: AI-powered content filtering
+- **Engagement**: Likes and comments system
+
+#### 🔧 Discord Bot
 - **Slash Commands**: `/warn`, `/mute`, `/kick`, `/ban`
-- **Quarantine Queue**: Review flagged content
-- **Audit Logs**: Complete moderation history
+- **Moderation Logging**: Database tracking of all actions
+- **Role Sync**: Discord roles mapped to platform permissions
+- **Guild Monitoring**: Real-time server statistics
+- **DM Notifications**: Users notified of moderation actions
 
-### SFTP Access
-- **SSH Key Management**: Generate or upload keys
-- **Role-based Permissions**: Map Discord roles to filesystem access
+#### 🛡️ Moderation System
+- **AI Content Filtering**: OpenAI API for text moderation
+- **Fallback System**: Perspective API when OpenAI unavailable
+- **Basic Word Filter**: Fallback content filtering
+- **Moderation Queue**: Review flagged content
+- **Audit Trail**: Complete moderation history
+
+#### 🔐 SFTP Access
+- **SSH Key Management**: Generate or upload SSH keys
+- **Role-based Permissions**: Discord roles → filesystem permissions
 - **Chrooted Environment**: Secure user isolation
-- **Web UI**: Manage access through the dashboard
+- **Per-user Directories**: Isolated file spaces
+- **Connection Management**: Enable/disable access per user
 
-### Security
-- **Rate Limiting**: API and auth endpoint protection
-- **CSRF/CORS Protection**: Secure cross-origin requests
-- **Content Security Policy**: XSS prevention
-- **Fail2Ban Integration**: Brute-force protection
+#### 🔒 Security
+- **Authentication**: NextAuth.js with Discord OAuth
+- **Rate Limiting**: API endpoint protection
+- **Input Validation**: Zod schema validation
+- **File Upload Security**: Type and size validation
+- **Database Security**: Parameterized queries with Prisma
 
-## 📋 Prerequisites
+## 🚀 Installation
 
-- Debian 12 (Bookworm) VPS
-- Domain name (configured: themirage.xxx)
-- Discord Application & Bot Token
-- PostgreSQL 15+
+### Prerequisites
 - Node.js 18+
-- Nginx
-- SSL Certificate (Let's Encrypt)
+- PostgreSQL 15+
+- Discord Application & Bot Token
+- OpenAI API Key (optional, for moderation)
 
-## 🛠️ Quick Start
+### Quick Start
 
-### 1. Server Setup
+1. **Clone and Install**
+   ```bash
+   git clone <repository-url>
+   cd mirage-community
+   npm install
+   ```
 
-Run the automated setup script as root:
+2. **Environment Setup**
+   ```bash
+   cp env.example .env
+   # Edit .env with your configuration
+   ```
 
-```bash
-sudo ./scripts/debian-setup.sh
-```
+3. **Database Setup**
+   ```bash
+   npm run prisma:migrate
+   npm run prisma:generate
+   ```
 
-This installs and configures:
-- Node.js 18 via NodeSource
-- PostgreSQL 15
-- Nginx with SSL
-- Redis
-- UFW Firewall
-- Fail2Ban
-- Docker (optional)
+4. **Development**
+   ```bash
+   npm run dev  # Starts both Next.js and Discord bot
+   ```
 
-### 2. Clone Repository
-
-```bash
-cd /home/linuxuser
-git clone https://github.com/yourusername/mirage-community.git
-cd mirage-community
-```
-
-### 3. Environment Configuration
-
-```bash
-cp env.example .env
-nano .env
-```
-
-Required environment variables:
-- `DATABASE_URL`: PostgreSQL connection string
-- `NEXTAUTH_SECRET`: Random secret for NextAuth
-- `DISCORD_CLIENT_ID`: Discord OAuth app ID
-- `DISCORD_CLIENT_SECRET`: Discord OAuth secret
-- `DISCORD_BOT_TOKEN`: Bot authentication token
-- `DISCORD_GUILD_ID`: Your Discord server ID
-- `OPENAI_API_KEY`: For content moderation
-
-### 4. Install Dependencies
-
-```bash
-npm install
-```
-
-### 5. Database Setup
-
-```bash
-# Run migrations
-npm run prisma:deploy
-
-# (Optional) Open Prisma Studio
-npm run prisma:studio
-```
-
-### 6. Build Application
-
-```bash
-npm run build
-```
-
-### 7. Configure Services
-
-```bash
-# Copy service files
-sudo cp config/mirage-app.service /etc/systemd/system/
-sudo cp config/mirage-bot.service /etc/systemd/system/
-
-# Enable services
-sudo systemctl daemon-reload
-sudo systemctl enable mirage-app mirage-bot
-sudo systemctl start mirage-app mirage-bot
-```
-
-### 8. Configure Nginx
-
-```bash
-# Copy Nginx config
-sudo cp config/nginx.conf /etc/nginx/sites-available/themirage.xxx
-sudo ln -s /etc/nginx/sites-available/themirage.xxx /etc/nginx/sites-enabled/
-
-# Test and reload
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-### 9. SSL Certificate
-
-```bash
-sudo certbot --nginx -d themirage.xxx -d www.themirage.xxx
-```
-
-## 🐳 Docker Deployment
-
-Alternative deployment using Docker Compose:
-
-```bash
-# Copy environment file
-cp env.example .env
-# Edit configuration
-nano .env
-
-# Start services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-```
+5. **Production Build**
+   ```bash
+   npm run build
+   npm start
+   ```
 
 ## 📁 Project Structure
 
 ```
-mirage-community/
-├── .github/workflows/    # CI/CD workflows
-├── bot/                  # Discord bot
-│   ├── commands/        # Slash commands
-│   ├── events/          # Event handlers
-│   └── utils/           # Bot utilities
-├── config/              # Configuration files
-│   ├── nginx.conf       # Nginx configuration
-│   ├── *.service        # Systemd services
-├── prisma/              # Database schema
-├── public/              # Static assets
-├── scripts/             # Setup scripts
-├── src/
-│   ├── app/            # Next.js App Router
-│   │   ├── api/        # API routes
-│   │   ├── dashboard/  # Dashboard pages
-│   │   ├── gallery/    # Art gallery
-│   │   └── moderation/ # Mod tools
-│   ├── components/     # React components
-│   ├── lib/           # Core libraries
-│   │   ├── auth.ts    # NextAuth config
-│   │   ├── prisma.ts  # Database client
-│   │   ├── moderation/# Content moderation
-│   │   └── sftp/      # SFTP management
-│   └── types/         # TypeScript types
-├── docker-compose.yml   # Docker configuration
-├── Dockerfile          # App container
-└── Dockerfile.bot      # Bot container
+src/
+├── app/                    # Next.js 15 App Router
+│   ├── api/               # API Routes
+│   │   ├── art/           # Art gallery endpoints
+│   │   ├── auth/          # NextAuth.js
+│   │   ├── moderation/    # Moderation queue
+│   │   └── stats/         # Server statistics
+│   ├── dashboard/         # Admin dashboard
+│   └── page.tsx           # Home page
+├── components/            # React components
+│   ├── ui/               # Radix UI components
+│   ├── three/            # Three.js components
+│   └── layout/           # Layout components
+├── lib/                   # Utilities and services
+│   ├── auth.ts           # NextAuth configuration
+│   ├── moderation/       # Content moderation
+│   ├── sftp/             # SFTP management
+│   └── prisma.ts         # Database client
+└── types/                # TypeScript definitions
+
+bot/
+├── commands/              # Discord slash commands
+├── events/               # Discord event handlers
+├── utils/                # Bot utilities
+└── index.ts              # Bot entry point
+
+prisma/
+├── schema.prisma         # Database schema
+└── migrations/           # Database migrations
 ```
 
-## 🔧 Development
+## 🔧 Configuration
 
-### Local Development
-
+### Environment Variables
 ```bash
-# Start development servers
-npm run dev
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/mirage"
 
-# This runs both:
-# - Next.js dev server (port 3000)
-# - Discord bot with hot reload
+# NextAuth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key"
+
+# Discord
+DISCORD_CLIENT_ID="your-client-id"
+DISCORD_CLIENT_SECRET="your-client-secret"
+DISCORD_BOT_TOKEN="your-bot-token"
+DISCORD_GUILD_ID="your-guild-id"
+
+# Content Moderation (Optional)
+OPENAI_API_KEY="your-openai-key"
+PERSPECTIVE_API_KEY="your-perspective-key"
+
+# File Upload
+UPLOAD_DIR="/var/www/uploads"
+UPLOAD_MAX_FILE_SIZE="10485760"  # 10MB
+UPLOAD_ALLOWED_TYPES="image/jpeg,image/png,image/gif,image/webp"
+
+# SFTP (Optional)
+SFTP_BASE_PATH="/var/www/uploads"
+SFTP_PORT="2222"
 ```
 
-### Database Management
+### Discord Bot Setup
+1. Create Discord Application at https://discord.com/developers/applications
+2. Create bot and get token
+3. Enable required intents: Guilds, Guild Members, Guild Messages, Guild Moderation, Message Content
+4. Invite bot with permissions: Kick Members, Ban Members, Moderate Members
+
+## 📊 Database Schema
+
+### Key Models
+- **User**: Discord OAuth user data
+- **Artwork**: Art gallery items with metadata
+- **ModerationLog**: Moderation action history
+- **SftpAccess**: SFTP user configurations
+- **DiscordGuild**: Server statistics and configuration
+- **DiscordRole**: Role-based permissions
+
+## 🧪 Testing
 
 ```bash
-# Create migration
-npm run prisma:migrate
-
-# Apply migrations
-npm run prisma:deploy
-
-# Open Prisma Studio
-npm run prisma:studio
-```
-
-### Testing
-
-```bash
-# Run tests
+# Unit tests
 npm test
 
-# Watch mode
-npm run test:watch
+# E2E tests
+npm run test:e2e
+
+# Test coverage
+npm run test:coverage
 ```
 
-## 📊 API Endpoints
+## � Deployment
 
-### Public Endpoints
-- `GET /api/stats` - Server statistics
+### Docker
+```bash
+docker-compose up -d
+```
 
-### Protected Endpoints
+### Manual Deployment
+1. Build application: `npm run build`
+2. Set up systemd services (examples in `config/`)
+3. Configure Nginx reverse proxy
+4. Set up SSL with Let's Encrypt
+5. Configure firewall and security
+
+## 📚 API Documentation
+
+### Art Gallery API
 - `POST /api/art/upload` - Upload artwork
-- `GET /api/art/[id]` - Get artwork details
+- `GET /api/art` - List artworks
 - `POST /api/art/[id]/like` - Like artwork
 - `POST /api/art/[id]/comment` - Add comment
 
-### Moderation Endpoints
-- `GET /api/moderation/queue` - Get flagged content
-- `POST /api/moderation/queue` - Process moderation action
-- `GET /api/moderation/logs` - Get moderation history
+### Moderation API
+- `GET /api/moderation/queue` - Get moderation queue
+- `POST /api/moderation/approve` - Approve content
+- `POST /api/moderation/reject` - Reject content
 
-## 🔐 Security Considerations
+### Statistics API
+- `GET /api/stats` - Server statistics
+- `GET /api/stats/guild` - Discord guild stats
 
-1. **Environment Variables**: Never commit `.env` files
-2. **Database**: Use strong passwords, enable SSL
-3. **File Uploads**: Validate types, scan for malware
-4. **Rate Limiting**: Configured per endpoint
-5. **CORS**: Restricted to your domain
-6. **CSP**: Strict content security policy
+## � Development Workflow
 
-## 🚀 Deployment
-
-### GitHub Actions
-
-The project includes automated deployment:
-
-1. Push to `main` branch
-2. Tests run automatically
-3. Deploys to VPS via SSH
-4. Restarts services
-5. Sends Discord notification
-
-Required GitHub Secrets:
-- `VPS_HOST`: Your server IP
-- `VPS_USER`: SSH username
-- `VPS_SSH_KEY`: Private SSH key
-- `VPS_PORT`: SSH port (22)
-- `DISCORD_WEBHOOK`: Notification webhook
-
-### Manual Deployment
-
-```bash
-./deploy.sh
-```
-
-## 📝 Maintenance
-
-### Logs
-
-```bash
-# View app logs
-journalctl -u mirage-app -f
-
-# View bot logs
-journalctl -u mirage-bot -f
-
-# Nginx logs
-tail -f /var/log/nginx/themirage.access.log
-tail -f /var/log/nginx/themirage.error.log
-```
-
-### Backups
-
-```bash
-# Backup database
-pg_dump mirage_community > backup.sql
-
-# Backup uploads
-tar -czf uploads-backup.tar.gz /var/www/uploads
-```
-
-### Updates
-
-```bash
-# System updates
-sudo apt update && sudo apt upgrade
-
-# Node.js updates
-npm update
-
-# Security updates (automatic)
-# Configured via unattended-upgrades
-```
+1. **Code Quality**: ESLint + Prettier + TypeScript strict mode
+2. **Testing**: Vitest for unit tests, Playwright for E2E
+3. **Database**: Prisma migrations for schema changes
+4. **Security**: Regular dependency updates, security audits
+5. **Performance**: Bundle analysis, Core Web Vitals monitoring
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing`)
-5. Open Pull Request
+2. Create feature branch: `git checkout -b feature/new-feature`
+3. Run tests: `npm test`
+4. Commit changes: `git commit -m "Add new feature"`
+5. Push to branch: `git push origin feature/new-feature`
+6. Create Pull Request
 
-## 📄 License
+## � License
 
-This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-- Built with ❤️ for The Mirage Community
-- Powered by Next.js, Discord.js, and PostgreSQL
-- Secured with Let's Encrypt SSL
-
----
-
-For support, join our Discord: [discord.gg/yourinvite](https://discord.gg/yourinvite) 
+This project is licensed under the MIT License. 

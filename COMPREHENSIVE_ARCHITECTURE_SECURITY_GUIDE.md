@@ -1,131 +1,89 @@
-# Comprehensive System Architecture & Security Implementation Guide
+# Architecture & Security Implementation Guide
 
-## Project Overview
-**Current State:** Next.js 14 + Discord.js v14 community platform  
-**Target State:** Next.js 15 + Enhanced security + Optimized performance  
-**Business Value:** Scalable community platform with robust security and real-time features
+## System Architecture
 
----
+### Current Implementation Overview
 
-## 1. System Architecture Diagram
-
-### Current Architecture (Microservices Breakdown)
+The Mirage Community Platform uses a microservices-oriented architecture with the following components:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                          Load Balancer / CDN                        │
+│                          Load Balancer                              │
 │                     (Nginx + Let's Encrypt SSL)                     │
 └─────────────────────────┬───────────────────────────────────────────┘
                           │
 ┌─────────────────────────┴───────────────────────────────────────────┐
-│                     API Gateway / Reverse Proxy                     │
-│                     (Rate Limiting + DDoS Protection)               │
+│                     Next.js 15 Application                          │
+│                     (App Router + API Routes)                       │
 └─────────┬───────────────────────────────────────────────────────┬───┘
           │                                                       │
 ┌─────────▼──────────┐                                 ┌─────────▼──────────┐
-│   Next.js 15 App   │                                 │   Discord Bot      │
-│   (Port 3000)      │                                 │   (Discord.js v14) │
+│   Web Application  │                                 │   Discord Bot      │
+│   (Port 3000)      │                                 │   (Discord.js 14)  │
 │                    │                                 │                    │
 │ ┌─────────────────┐│                                 │ ┌─────────────────┐│
-│ │  Auth Service   ││                                 │ │  Command Handler││
-│ │  (NextAuth.js)  ││                                 │ │  Event Listeners││
-│ │                 ││                                 │ │  Moderation API ││
+│ │  NextAuth.js    ││                                 │ │  Slash Commands ││
+│ │  Authentication ││                                 │ │  Event Handlers ││
+│ │                 ││                                 │ │  Moderation     ││
 │ └─────────────────┘│                                 │ └─────────────────┘│
 │                    │                                 │                    │
 │ ┌─────────────────┐│                                 │ ┌─────────────────┐│
 │ │  API Routes     ││                                 │ │  Guild Monitor  ││
-│ │  /api/auth/*    ││                                 │ │  Stats Collector││
-│ │  /api/art/*     ││                                 │ │  Auto-Moderation││
-│ │  /api/stats/*   ││                                 │ └─────────────────┘│
+│ │  /api/auth      ││                                 │ │  Stats Collector││
+│ │  /api/art       ││                                 │ │  Database Sync  ││
+│ │  /api/stats     ││                                 │ └─────────────────┘│
 │ │  /api/moderation││                                 │                    │
 │ └─────────────────┘│                                 └─────────┬──────────┘
 │                    │                                           │
 │ ┌─────────────────┐│                                           │
-│ │  File Upload    ││                                           │
-│ │  (AWS S3/Local) ││                                           │
+│ │  File Storage   ││                                           │
+│ │  (Local/Sharp)  ││                                           │
 │ └─────────────────┘│                                           │
 └─────────┬──────────┘                                           │
           │                                                       │
-          ├──────────────────────┬────────────────────────────────┤
-          │                      │                                │
-┌─────────▼──────────┐  ┌─────────▼──────────┐  ┌─────────▼──────────┐
-│   PostgreSQL 15    │  │     Redis Cache    │  │   SFTP Server      │
-│   (Port 5432)      │  │    (Port 6379)     │  │   (Port 2222)      │
-│                    │  │                    │  │                    │
-│ ┌─────────────────┐│  │ ┌─────────────────┐│  │ ┌─────────────────┐│
-│ │  User Data      ││  │ │  Session Store  ││  │ │  File Access    ││
-│ │  Guild Stats    ││  │ │  Rate Limiting  ││  │ │  User Uploads   ││
-│ │  Artwork Store  ││  │ │  Cache Layer    ││  │ │  Backup Storage ││
-│ │  Moderation     ││  │ └─────────────────┘│  │ └─────────────────┘│
-│ └─────────────────┘│  └────────────────────┘  └────────────────────┘
-└────────────────────┘                          
+          └──────────────────────┬────────────────────────────────┘
+                                 │
+                   ┌─────────────▼──────────┐
+                   │   PostgreSQL 15        │
+                   │   (Prisma ORM)         │
+                   │                        │
+                   │ ┌─────────────────────┐│
+                   │ │  User Data          ││
+                   │ │  Guild Stats        ││
+                   │ │  Artwork Storage    ││
+                   │ │  Moderation Logs    ││
+                   │ │  SFTP Access        ││
+                   │ └─────────────────────┘│
+                   └────────────────────────┘
 ```
 
-### Enhanced Architecture (Next.js 15 + Optimizations)
+### Component Details
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                      Cloudflare / AWS CloudFront                    │
-│                 (CDN + WAF + DDoS Protection Layer 1)               │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-┌─────────────────────────┴───────────────────────────────────────────┐
-│                   Enhanced API Gateway                              │
-│           (Nginx + ModSecurity + Rate Limiting + Analytics)         │
-└─────────┬───────────────────────────────────────────────────────┬───┘
-          │                                                       │
-┌─────────▼──────────┐                                 ┌─────────▼──────────┐
-│   Next.js 15 App   │                                 │ Discord Bot Cluster │
-│   (Turbopack)      │                                 │ (Horizontal Scaling)│
-│                    │                                 │                    │
-│ ┌─────────────────┐│                                 │ ┌─────────────────┐│
-│ │  App Router     ││                                 │ │  Shard Manager  ││
-│ │  Server Actions ││                                 │ │  Command Router ││
-│ │  Edge Runtime   ││                                 │ │  Event Queue    ││
-│ └─────────────────┘│                                 │ └─────────────────┘│
-│                    │                                 │                    │
-│ ┌─────────────────┐│                                 │ ┌─────────────────┐│
-│ │  API Routes     ││                                 │ │  AI Moderation  ││
-│ │  Middleware     ││                                 │ │  Analytics API  ││
-│ │  Streaming      ││                                 │ │  Webhook Handler││
-│ └─────────────────┘│                                 │ └─────────────────┘│
-└─────────┬──────────┘                                 └─────────┬──────────┘
-          │                                                       │
-          ├──────────────────────┬────────────────────────────────┤
-          │                      │                                │
-┌─────────▼──────────┐  ┌─────────▼──────────┐  ┌─────────▼──────────┐
-│  PostgreSQL 15     │  │   Redis Cluster    │  │  Message Queue     │
-│  (Primary/Replica) │  │   (Multi-node)     │  │  (Bull/Redis)      │
-│                    │  │                    │  │                    │
-│ ┌─────────────────┐│  │ ┌─────────────────┐│  │ ┌─────────────────┐│
-│ │  Read Replicas  ││  │ │  Session Store  ││  │ │  Job Processing ││
-│ │  Connection Pool││  │ │  Rate Limiting  ││  │ │  Email Queue    ││
-│ │  Backup System  ││  │ │  Cache Layer    ││  │ │  Analytics Jobs ││
-│ └─────────────────┘│  │ └─────────────────┘│  │ └─────────────────┘│
-└────────────────────┘  └────────────────────┘  └────────────────────┘
-```
+#### Next.js Application
+- **Framework**: Next.js 15.0.0-rc.1 with App Router
+- **Runtime**: Node.js 18+
+- **Language**: TypeScript 5.5.3
+- **Styling**: Tailwind CSS 3.4.4
+- **Components**: Radix UI + Framer Motion
 
----
+#### Discord Bot
+- **Library**: Discord.js 14.15.0
+- **Commands**: Slash command architecture
+- **Intents**: Guilds, Members, Messages, Moderation, Content
+- **Database**: Shared PostgreSQL instance
 
-## 2. Security Implementation Guide
+#### Database
+- **Engine**: PostgreSQL 15
+- **ORM**: Prisma 5.19.0
+- **Migrations**: Automated with Prisma Migrate
+- **Indexing**: Optimized for common queries
 
-### 2.1 Authentication Flows
+## Security Implementation
 
-#### Current State
-- NextAuth.js with Discord OAuth
-- Session-based authentication
-- Basic role management
+### Authentication & Authorization
 
-#### Enhanced Authentication Flow
-
+#### NextAuth.js Implementation
 ```typescript
-// Enhanced auth configuration
-// src/lib/auth.ts
-import { NextAuthOptions } from 'next-auth'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
-import DiscordProvider from 'next-auth/providers/discord'
-import { prisma } from './prisma'
-
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -134,795 +92,548 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.DISCORD_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope: "identify email guilds guilds.members.read",
+          scope: 'identify email guilds guilds.members.read',
         },
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, account, profile }) {
-      // Enhanced JWT with role-based access
-      if (account && profile) {
-        token.discordId = profile.id
-        token.avatar = profile.avatar
-        token.roles = await getUserRoles(profile.id)
-      }
-      return token
+    async signIn({ user, account, profile }) {
+      // Validates Discord user and updates database
     },
-    async session({ session, token }) {
-      // Enhanced session with security context
-      session.user.discordId = token.discordId
-      session.user.roles = token.roles
-      session.user.permissions = await getUserPermissions(token.discordId)
-      return session
+    async jwt({ token, user, account }) {
+      // Adds user ID to JWT for API access
     },
   },
-  session: {
-    strategy: 'jwt',
-    maxAge: 24 * 60 * 60, // 24 hours
-  },
-  pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
-  },
 }
 ```
 
-### 2.2 API Security
-
-#### Security Middleware Stack
-
+#### Role-Based Access Control
 ```typescript
-// src/middleware.ts
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { getToken } from 'next-auth/jwt'
-import { rateLimit } from './lib/rate-limit'
-
-export async function middleware(request: NextRequest) {
-  const token = await getToken({ req: request })
-  
-  // Rate limiting
-  const rateLimitResult = await rateLimit(request)
-  if (!rateLimitResult.success) {
-    return NextResponse.json(
-      { error: 'Rate limit exceeded' },
-      { status: 429 }
-    )
-  }
-  
-  // API route protection
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    // Security headers
-    const response = NextResponse.next()
-    response.headers.set('X-Content-Type-Options', 'nosniff')
-    response.headers.set('X-Frame-Options', 'DENY')
-    response.headers.set('X-XSS-Protection', '1; mode=block')
-    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-    
-    // Authentication check for protected routes
-    if (request.nextUrl.pathname.startsWith('/api/protected/')) {
-      if (!token) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-    }
-    
-    return response
-  }
-  
-  return NextResponse.next()
-}
-
-export const config = {
-  matcher: ['/api/:path*', '/dashboard/:path*']
+// Discord role mapping to application permissions
+const ROLE_PERMISSIONS = {
+  ADMIN: ['*'],
+  MODERATOR: ['moderation.*', 'sftp.manage'],
+  ARTIST: ['art.upload', 'sftp.read'],
+  MEMBER: ['art.view', 'art.comment']
 }
 ```
 
-### 2.3 Data Protection & GDPR Compliance
+### Input Validation & Sanitization
 
-#### Enhanced User Data Management
-
+#### File Upload Security
 ```typescript
-// src/lib/gdpr.ts
-export class GDPRManager {
-  static async exportUserData(userId: string) {
-    const userData = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        artworks: true,
-        comments: true,
-        likes: true,
-        sftpAccess: true,
-        discordRoles: true,
-        sessions: true,
-        accounts: true,
-      },
-    })
-    
-    // Remove sensitive data
-    const exportData = {
-      ...userData,
-      accounts: userData?.accounts.map(acc => ({
-        provider: acc.provider,
-        createdAt: acc.createdAt,
-      })),
-    }
-    
-    return exportData
-  }
-  
-  static async deleteUserData(userId: string) {
-    // Soft delete with anonymization
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        username: `deleted_user_${Date.now()}`,
-        email: null,
-        avatar: null,
-        banner: null,
-        verified: false,
-        discordId: `deleted_${Date.now()}`,
-      },
-    })
-    
-    // Anonymize related data
-    await prisma.comment.updateMany({
-      where: { userId },
-      data: { content: '[deleted]' },
-    })
-    
-    return { success: true }
-  }
-}
+// Implemented in /api/art/upload
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+
+// Validation flow:
+1. File size validation
+2. MIME type checking
+3. Extension validation
+4. Sharp image processing (validates actual image)
+5. Content moderation (AI-powered)
 ```
 
-### 2.4 Input Validation & Sanitization
-
+#### API Input Validation
 ```typescript
-// src/lib/validation.ts
-import { z } from 'zod'
-
-export const artworkSchema = z.object({
-  title: z.string().min(1).max(100).trim(),
-  description: z.string().max(1000).optional(),
-  tags: z.array(z.string().max(50)).max(10),
-  nsfw: z.boolean(),
+// Using Zod schemas
+const ArtworkSchema = z.object({
+  title: z.string().min(1).max(100),
+  description: z.string().max(1000),
+  tags: z.string().optional(),
+  nsfw: z.boolean().optional()
 })
+```
 
-export const commentSchema = z.object({
-  content: z.string().min(1).max(2000).trim(),
-  artworkId: z.string().cuid(),
-})
+### Content Moderation System
 
-// XSS protection
-export function sanitizeInput(input: string): string {
-  return input
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;')
+#### Multi-Layer Moderation
+```typescript
+export async function moderateContent(content: string): Promise<ModerationResult> {
+  try {
+    // Primary: OpenAI Moderation API
+    const openaiResult = await openai.moderations.create({ input: content })
+    if (openaiResult.results[0].flagged) {
+      return processOpenAIResult(openaiResult)
+    }
+  } catch (error) {
+    // Fallback: Perspective API
+    try {
+      const perspectiveResult = await moderateWithPerspective(content)
+      return perspectiveResult
+    } catch (fallbackError) {
+      // Final fallback: Basic word filtering
+      return basicWordFilter(content)
+    }
+  }
 }
 ```
 
----
+#### Moderation Categories
+- **Hate Speech**: Detected via OpenAI + Perspective API
+- **Harassment**: Multi-API detection with severity scoring
+- **NSFW Content**: Image analysis + text content
+- **Violence**: Threat detection and graphic content
+- **Spam**: Pattern recognition and link analysis
+- **Self-Harm**: Sensitive content detection
 
-## 3. Database Schema Optimization
+### Database Security
 
-### 3.1 Current Schema Analysis
-
-**Strengths:**
-- Proper foreign key relationships
-- Composite indexes for performance
-- GDPR-compliant design
-- Audit trail capabilities
-
-**Optimization Opportunities:**
-
-```prisma
-// Enhanced schema with performance optimizations
-// prisma/schema.prisma
-
-generator client {
-  provider = "prisma-client-js"
-  previewFeatures = ["fullTextSearch", "postgresqlExtensions"]
-}
-
+#### Connection Security
+```typescript
+// Prisma configuration
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  extensions = [pg_trgm]
+  // SSL mode enforced in production
 }
 
-model User {
-  id              String    @id @default(cuid())
-  discordId       String    @unique
-  username        String
-  discriminator   String
-  email           String?   @unique
-  avatar          String?
-  banner          String?
-  accentColor     Int?
-  locale          String?
-  verified        Boolean   @default(false)
-  emailVerified   DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  lastActive      DateTime? // New field for tracking activity
-  isDeleted       Boolean   @default(false) // Soft delete flag
-  
-  // Relations
-  sessions        Session[]
-  accounts        Account[]
-  artworks        Artwork[]
-  comments        Comment[]
-  likes           Like[]
-  moderationLogs  ModerationLog[]
-  sftpAccess      SftpAccess?
-  discordRoles    UserDiscordRole[]
-  
-  // Enhanced indexes
-  @@index([discordId])
-  @@index([email])
-  @@index([username]) // Full-text search
-  @@index([createdAt])
-  @@index([lastActive])
-  @@index([isDeleted])
-  @@fulltext([username])
-}
-
-model Artwork {
-  id              String    @id @default(cuid())
-  userId          String
-  title           String
-  description     String?
-  filename        String
-  fileUrl         String
-  thumbnailUrl    String?
-  fileSize        Int
-  mimeType        String
-  width           Int?
-  height          Int?
-  tags            Tag[]
-  nsfw            Boolean   @default(false)
-  published       Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  viewCount       Int       @default(0) // New field
-  downloadCount   Int       @default(0) // New field
-  
-  // Relations
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comments        Comment[]
-  likes           Like[]
-  moderationFlags ModerationFlag[]
-  
-  // Enhanced indexes
-  @@index([userId])
-  @@index([published, createdAt])
-  @@index([nsfw])
-  @@index([viewCount])
-  @@index([createdAt])
-  @@fulltext([title, description])
-}
-
-// New model for caching and performance
-model CachedStats {
-  id          String    @id @default(cuid())
-  key         String    @unique
-  value       Json
-  expiresAt   DateTime
-  createdAt   DateTime  @default(now())
-  
-  @@index([key])
-  @@index([expiresAt])
-}
-
-// New model for audit logging
-model AuditLog {
-  id          String    @id @default(cuid())
-  userId      String?
-  action      String
-  resource    String
-  resourceId  String?
-  oldValues   Json?
-  newValues   Json?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime  @default(now())
-  
-  @@index([userId])
-  @@index([action])
-  @@index([resource])
-  @@index([createdAt])
-}
-```
-
-### 3.2 Connection Pooling & Query Optimization
-
-```typescript
-// src/lib/prisma.ts
-import { PrismaClient } from '@prisma/client'
-
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  log: ['query'],
+// Connection pooling
+const prisma = new PrismaClient({
   datasources: {
     db: {
       url: process.env.DATABASE_URL,
     },
   },
 })
+```
 
-// Connection pooling configuration
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+#### Query Security
+- **Parameterized Queries**: Prisma ORM prevents SQL injection
+- **Access Control**: Row-level security planned
+- **Audit Logging**: All moderation actions logged
+- **Data Validation**: Schema-level constraints
 
-// Query optimization utilities
-export class QueryOptimizer {
-  static async getArtworksWithPagination(
-    page: number,
-    limit: number,
-    filters: ArtworkFilters
-  ) {
-    const skip = (page - 1) * limit
-    
-    return await prisma.artwork.findMany({
-      where: {
-        published: true,
-        ...(filters.nsfw !== undefined && { nsfw: filters.nsfw }),
-        ...(filters.userId && { userId: filters.userId }),
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            avatar: true,
-          },
-        },
-        _count: {
-          select: {
-            likes: true,
-            comments: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take: limit,
-    })
+### File System Security
+
+#### Upload Security
+```typescript
+// File storage implementation
+const UPLOAD_DIR = process.env.UPLOAD_DIR || '/var/www/uploads'
+
+// Security measures:
+1. Unique filename generation (UUID)
+2. User-specific directories
+3. File type validation
+4. Size limits
+5. Thumbnail generation with Sharp
+6. Metadata sanitization
+```
+
+#### SFTP Security
+```typescript
+// SFTP implementation
+export class SftpManager {
+  static async createUserAccess(config: SftpUserConfig): Promise<void> {
+    // Security features:
+    // 1. Chrooted environment
+    // 2. SSH key-based authentication
+    // 3. Role-based permissions
+    // 4. Directory isolation
+    // 5. Command restrictions
   }
 }
 ```
 
----
+### API Security
 
-## 4. Error Handling & Logging Strategy
-
-### 4.1 Comprehensive Error Handling
-
+#### Rate Limiting
 ```typescript
-// src/lib/error-handler.ts
-import { NextResponse } from 'next/server'
-import { logger } from './logger'
-
-export enum ErrorType {
-  VALIDATION = 'VALIDATION',
-  AUTHENTICATION = 'AUTHENTICATION',
-  AUTHORIZATION = 'AUTHORIZATION',
-  NOT_FOUND = 'NOT_FOUND',
-  RATE_LIMIT = 'RATE_LIMIT',
-  INTERNAL = 'INTERNAL',
-  EXTERNAL_API = 'EXTERNAL_API',
+// Current implementation (basic)
+const RATE_LIMITS = {
+  '/api/art/upload': '5 per 10 minutes',
+  '/api/auth/*': '10 per minute',
+  '/api/moderation/*': '20 per minute'
 }
 
-export class AppError extends Error {
-  constructor(
-    public type: ErrorType,
-    message: string,
-    public statusCode: number = 500,
-    public isOperational: boolean = true
-  ) {
-    super(message)
-    this.name = this.constructor.name
-    Error.captureStackTrace(this, this.constructor)
-  }
-}
+// Planned: Redis-based rate limiting
+```
 
-export class ErrorHandler {
-  static handle(error: unknown, request?: Request) {
-    if (error instanceof AppError) {
-      logger.error('Application Error:', {
-        type: error.type,
-        message: error.message,
-        statusCode: error.statusCode,
-        url: request?.url,
-        stack: error.stack,
-      })
-      
-      return NextResponse.json(
-        {
-          error: {
-            type: error.type,
-            message: error.message,
-            timestamp: new Date().toISOString(),
-          },
-        },
-        { status: error.statusCode }
-      )
-    }
-    
-    // Unknown error
-    logger.error('Unknown Error:', {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      url: request?.url,
-    })
-    
-    return NextResponse.json(
+#### CORS Configuration
+```typescript
+// Next.js configuration
+const nextConfig = {
+  async headers() {
+    return [
       {
-        error: {
-          type: ErrorType.INTERNAL,
-          message: 'An unexpected error occurred',
-          timestamp: new Date().toISOString(),
-        },
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: process.env.NEXTAUTH_URL || 'http://localhost:3000' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+        ],
       },
-      { status: 500 }
-    )
+    ]
+  },
+}
+```
+
+### Discord Bot Security
+
+#### Command Security
+```typescript
+// Permission validation for each command
+export const warnCommand: Command = {
+  data: new SlashCommandBuilder()
+    .setName('warn')
+    .setDescription('Warn a user')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+  
+  async execute(interaction) {
+    // Security checks:
+    // 1. Permission validation
+    // 2. Target user validation
+    // 3. Self-action prevention
+    // 4. Bot protection
+    // 5. Database logging
   }
 }
 ```
 
-### 4.2 Enhanced Logging System
-
+#### Event Security
 ```typescript
-// src/lib/logger.ts
-import winston from 'winston'
-import 'winston-daily-rotate-file'
-
-const logFormat = winston.format.combine(
-  winston.format.timestamp(),
-  winston.format.errors({ stack: true }),
-  winston.format.json()
-)
-
-export const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: logFormat,
-  defaultMeta: { service: 'mirage-community' },
-  transports: [
-    // Daily rotate file for all logs
-    new winston.transports.DailyRotateFile({
-      filename: 'logs/application-%DATE%.log',
-      datePattern: 'YYYY-MM-DD',
-      zippedArchive: true,
-      maxSize: '20m',
-      maxFiles: '14d',
-    }),
-    
-    // Separate file for errors
-    new winston.transports.DailyRotateFile({
-      filename: 'logs/error-%DATE%.log',
-      datePattern: 'YYYY-MM-DD',
-      level: 'error',
-      zippedArchive: true,
-      maxSize: '20m',
-      maxFiles: '30d',
-    }),
-    
-    // Console output for development
-    ...(process.env.NODE_ENV !== 'production' ? [
-      new winston.transports.Console({
-        format: winston.format.combine(
-          winston.format.colorize(),
-          winston.format.simple()
-        ),
-      }),
-    ] : []),
-  ],
+// Discord event handler security
+client.on('messageCreate', async (message) => {
+  // Security measures:
+  // 1. Bot message filtering
+  // 2. Content moderation
+  // 3. Rate limit checking
+  // 4. Spam detection
+  // 5. Audit logging
 })
-
-// Structured logging utilities
-export class StructuredLogger {
-  static logUserAction(userId: string, action: string, metadata?: any) {
-    logger.info('User Action', {
-      userId,
-      action,
-      metadata,
-      timestamp: new Date().toISOString(),
-    })
-  }
-  
-  static logSecurityEvent(event: string, severity: 'low' | 'medium' | 'high', data?: any) {
-    logger.warn('Security Event', {
-      event,
-      severity,
-      data,
-      timestamp: new Date().toISOString(),
-    })
-  }
-  
-  static logAPIRequest(method: string, url: string, duration: number, statusCode: number) {
-    logger.info('API Request', {
-      method,
-      url,
-      duration,
-      statusCode,
-      timestamp: new Date().toISOString(),
-    })
-  }
-}
 ```
 
----
+## Performance & Scalability
 
-## 5. Rate Limiting & DDoS Protection
+### Database Optimization
 
-### 5.1 Multi-Layer Rate Limiting
-
-```typescript
-// src/lib/rate-limit.ts
-import { Redis } from 'ioredis'
-import { NextRequest } from 'next/server'
-
-const redis = new Redis(process.env.REDIS_URL!)
-
-export interface RateLimitConfig {
-  windowMs: number
-  maxRequests: number
-  keyGenerator?: (req: NextRequest) => string
-}
-
-export class RateLimiter {
-  private static configs: Map<string, RateLimitConfig> = new Map([
-    ['api', { windowMs: 15 * 60 * 1000, maxRequests: 100 }], // 100 requests per 15 minutes
-    ['auth', { windowMs: 15 * 60 * 1000, maxRequests: 5 }],   // 5 login attempts per 15 minutes
-    ['upload', { windowMs: 60 * 60 * 1000, maxRequests: 10 }], // 10 uploads per hour
-    ['strict', { windowMs: 60 * 1000, maxRequests: 10 }],     // 10 requests per minute
-  ])
-  
-  static async checkLimit(
-    request: NextRequest,
-    type: string = 'api'
-  ): Promise<{ success: boolean; remaining: number; resetTime: number }> {
-    const config = this.configs.get(type)
-    if (!config) throw new Error(`Unknown rate limit type: ${type}`)
-    
-    const key = this.generateKey(request, type)
-    const now = Date.now()
-    const window = Math.floor(now / config.windowMs)
-    const redisKey = `ratelimit:${key}:${window}`
-    
-    const current = await redis.incr(redisKey)
-    
-    if (current === 1) {
-      await redis.expire(redisKey, Math.ceil(config.windowMs / 1000))
-    }
-    
-    const remaining = Math.max(0, config.maxRequests - current)
-    const resetTime = (window + 1) * config.windowMs
-    
-    return {
-      success: current <= config.maxRequests,
-      remaining,
-      resetTime,
-    }
-  }
-  
-  private static generateKey(request: NextRequest, type: string): string {
-    const forwarded = request.headers.get('x-forwarded-for')
-    const ip = forwarded ? forwarded.split(',')[0] : request.ip || 'unknown'
-    return `${type}:${ip}`
-  }
-}
+#### Indexing Strategy
+```sql
+-- Key indexes implemented
+CREATE INDEX idx_user_discord_id ON "User"("discordId");
+CREATE INDEX idx_artwork_user_id ON "Artwork"("userId");
+CREATE INDEX idx_moderation_log_guild_id ON "ModerationLog"("guildId");
+CREATE INDEX idx_moderation_log_user_id ON "ModerationLog"("userId");
 ```
 
-### 5.2 DDoS Protection Strategy
-
+#### Query Optimization
 ```typescript
-// src/lib/ddos-protection.ts
-export class DDoSProtection {
-  private static suspiciousIPs = new Set<string>()
-  private static blockedIPs = new Set<string>()
-  
-  static async analyzeRequest(request: NextRequest): Promise<{
-    allowed: boolean
-    reason?: string
-    action?: string
-  }> {
-    const ip = this.getClientIP(request)
-    
-    // Check if IP is blocked
-    if (this.blockedIPs.has(ip)) {
-      return { allowed: false, reason: 'IP_BLOCKED', action: 'BLOCK' }
-    }
-    
-    // Check request patterns
-    const patterns = await this.checkPatterns(request, ip)
-    
-    if (patterns.suspicious) {
-      this.suspiciousIPs.add(ip)
-      logger.warn('Suspicious request pattern detected', {
-        ip,
-        patterns: patterns.reasons,
-        url: request.url,
-      })
-      
-      // Auto-block after multiple suspicious requests
-      if (patterns.severity > 0.8) {
-        this.blockedIPs.add(ip)
-        return { allowed: false, reason: 'AUTO_BLOCKED', action: 'BLOCK' }
+// Optimized queries with select/include
+const artworks = await prisma.artwork.findMany({
+  select: {
+    id: true,
+    title: true,
+    thumbnailUrl: true,
+    user: {
+      select: {
+        username: true,
+        avatar: true
+      }
+    },
+    _count: {
+      select: {
+        likes: true,
+        comments: true
       }
     }
-    
-    return { allowed: true }
-  }
+  },
+  take: 20,
+  orderBy: { createdAt: 'desc' }
+})
+```
+
+### Image Processing
+
+#### Sharp Integration
+```typescript
+// Optimized image processing
+const processImage = async (buffer: Buffer) => {
+  const image = sharp(buffer)
+  const metadata = await image.metadata()
   
-  private static async checkPatterns(request: NextRequest, ip: string) {
-    const patterns = {
-      suspicious: false,
-      reasons: [] as string[],
-      severity: 0,
+  // Create optimized thumbnail
+  const thumbnail = await image
+    .resize(400, 400, { 
+      fit: 'inside',
+      withoutEnlargement: true 
+    })
+    .jpeg({ quality: 80 })
+    .toBuffer()
+  
+  return { metadata, thumbnail }
+}
+```
+
+### Caching Strategy
+
+#### Current Implementation
+- **Next.js Static Generation**: Pre-rendered pages
+- **Image Optimization**: Next.js built-in optimization
+- **API Response Caching**: Planned Redis implementation
+
+#### Planned Enhancements
+- **Redis Caching**: Session storage, rate limiting
+- **CDN Integration**: Static asset delivery
+- **Database Query Caching**: Frequently accessed data
+
+## Monitoring & Logging
+
+### Application Logging
+
+#### Winston Configuration
+```typescript
+const logger = winston.createLogger({
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+    new winston.transports.Console({
+      format: winston.format.simple()
+    })
+  ]
+})
+```
+
+### Error Tracking
+
+#### Error Handling Strategy
+```typescript
+// API error handling
+export default async function handler(req: NextRequest) {
+  try {
+    // API logic
+  } catch (error) {
+    logger.error('API Error:', error)
+    
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
     }
     
-    // Check for common attack patterns
-    const userAgent = request.headers.get('user-agent') || ''
-    const url = request.url || ''
-    
-    // Bot detection
-    if (this.isBotUserAgent(userAgent)) {
-      patterns.suspicious = true
-      patterns.reasons.push('BOT_USER_AGENT')
-      patterns.severity += 0.3
-    }
-    
-    // SQL injection attempts
-    if (this.containsSQLInjection(url)) {
-      patterns.suspicious = true
-      patterns.reasons.push('SQL_INJECTION')
-      patterns.severity += 0.9
-    }
-    
-    // XSS attempts
-    if (this.containsXSSAttempt(url)) {
-      patterns.suspicious = true
-      patterns.reasons.push('XSS_ATTEMPT')
-      patterns.severity += 0.8
-    }
-    
-    return patterns
-  }
-  
-  private static isBotUserAgent(userAgent: string): boolean {
-    const botPatterns = [
-      'bot', 'crawler', 'spider', 'scraper',
-      'curl', 'wget', 'python-requests'
-    ]
-    return botPatterns.some(pattern => 
-      userAgent.toLowerCase().includes(pattern)
-    )
-  }
-  
-  private static containsSQLInjection(url: string): boolean {
-    const sqlPatterns = [
-      'union select', 'drop table', 'insert into',
-      'update set', 'delete from', '--', ';'
-    ]
-    return sqlPatterns.some(pattern => 
-      url.toLowerCase().includes(pattern)
-    )
-  }
-  
-  private static containsXSSAttempt(url: string): boolean {
-    const xssPatterns = [
-      '<script', 'javascript:', 'onerror=',
-      'onload=', 'eval(', 'alert('
-    ]
-    return xssPatterns.some(pattern => 
-      url.toLowerCase().includes(pattern)
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 ```
 
----
+### Performance Monitoring
 
-## 6. Implementation Roadmap
+#### Metrics Collection
+- **Response Times**: API endpoint performance
+- **Database Queries**: Query execution time
+- **File Upload**: Processing time and success rates
+- **Discord Bot**: Command execution metrics
 
-### Phase 1: Security Hardening (Week 1-2)
-- [ ] Implement enhanced authentication flows
-- [ ] Add comprehensive input validation
-- [ ] Deploy rate limiting middleware
-- [ ] Enhance error handling system
+## Deployment Security
 
-### Phase 2: Performance Optimization (Week 3-4)
-- [ ] Upgrade to Next.js 15 with Turbopack
-- [ ] Implement database query optimization
-- [ ] Add Redis caching layer
-- [ ] Optimize Docker containers
+### Environment Configuration
 
-### Phase 3: Monitoring & Observability (Week 5-6)
-- [ ] Deploy comprehensive logging
-- [ ] Implement health checks
-- [ ] Add performance monitoring
-- [ ] Set up alerting system
+#### Production Environment
+```bash
+# Security-focused environment variables
+NODE_ENV=production
+NEXTAUTH_URL=https://themirage.xxx
+NEXTAUTH_SECRET=<strong-random-secret>
 
-### Phase 4: Scalability Enhancements (Week 7-8)
-- [ ] Implement horizontal scaling
-- [ ] Add load balancing
-- [ ] Deploy CDN integration
-- [ ] Optimize database connections
+# Database security
+DATABASE_URL=postgresql://user:password@localhost:5432/mirage?sslmode=require
 
----
+# API Keys (encrypted in production)
+OPENAI_API_KEY=<encrypted-key>
+DISCORD_BOT_TOKEN=<encrypted-token>
+```
 
-## 7. Risk Assessment & Mitigations
+### Container Security
 
-### Security Risks
-- **Risk**: Data breaches through API vulnerabilities
-- **Mitigation**: Comprehensive input validation, rate limiting, and authentication
+#### Docker Configuration
+```dockerfile
+# Security-hardened Dockerfile
+FROM node:18-alpine
 
-### Performance Risks
-- **Risk**: Database bottlenecks under high load
-- **Mitigation**: Connection pooling, read replicas, and query optimization
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
 
-### Availability Risks
-- **Risk**: DDoS attacks causing service disruption
-- **Mitigation**: Multi-layer protection, automatic IP blocking, and CDN integration
+# Set working directory
+WORKDIR /app
 
----
+# Copy and install dependencies
+COPY package*.json ./
+RUN npm ci --only=production
 
-## 8. Business Impact Analysis
+# Copy application code
+COPY --chown=nextjs:nodejs . .
 
-### Performance Improvements
-- **Expected**: 70% reduction in API response time
-- **Value**: Improved user experience and retention
+# Switch to non-root user
+USER nextjs
 
-### Security Enhancements
-- **Expected**: 99.9% reduction in successful attacks
-- **Value**: Protected user data and compliance readiness
+# Expose port
+EXPOSE 3000
 
-### Scalability Benefits
-- **Expected**: 10x capacity increase
-- **Value**: Support for rapid community growth
+# Start application
+CMD ["npm", "start"]
+```
 
----
+### Network Security
 
-## 9. Compliance & Standards
+#### Firewall Configuration
+```bash
+# UFW firewall rules
+sudo ufw enable
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 22/tcp
+sudo ufw allow 2222/tcp  # SFTP
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+```
 
-### GDPR Compliance
-- ✅ Data export functionality
-- ✅ Right to deletion (soft delete)
-- ✅ Consent management
-- ✅ Data minimization
+#### SSL/TLS Configuration
+```nginx
+# Nginx SSL configuration
+ssl_certificate /etc/letsencrypt/live/themirage.xxx/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/themirage.xxx/privkey.pem;
 
-### Security Standards
-- ✅ OWASP Top 10 protection
-- ✅ Input validation and sanitization
-- ✅ Secure authentication flows
-- ✅ Comprehensive logging
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384;
+ssl_prefer_server_ciphers off;
 
----
+add_header Strict-Transport-Security "max-age=63072000" always;
+add_header X-Frame-Options DENY;
+add_header X-Content-Type-Options nosniff;
+add_header X-XSS-Protection "1; mode=block";
+```
 
-## 10. Next Steps
+## Risk Assessment & Mitigation
 
-1. **Immediate Actions**:
-   - Implement rate limiting middleware
-   - Add security headers to all responses
-   - Deploy enhanced error handling
+### Identified Risks
 
-2. **Short-term Goals**:
-   - Upgrade to Next.js 15
-   - Optimize database queries
-   - Implement comprehensive monitoring
+#### High-Risk Areas
+1. **File Upload System**
+   - **Risk**: Malicious file uploads
+   - **Mitigation**: Type validation, size limits, sandboxed processing
 
-3. **Long-term Vision**:
-   - Achieve 99.9% uptime
-   - Support 100k+ concurrent users
-   - Maintain sub-200ms API response times
+2. **Discord Bot Permissions**
+   - **Risk**: Privilege escalation
+   - **Mitigation**: Strict permission checking, audit logging
 
-This comprehensive architecture provides a robust foundation for a scalable, secure community platform with Discord integration. The implementation follows industry best practices while maintaining performance and user experience as top priorities.
+3. **Database Access**
+   - **Risk**: SQL injection, data breaches
+   - **Mitigation**: Parameterized queries, access controls
+
+4. **API Endpoints**
+   - **Risk**: Rate limiting bypass, DDoS
+   - **Mitigation**: Multiple rate limiting layers, monitoring
+
+#### Medium-Risk Areas
+1. **Content Moderation**
+   - **Risk**: False positives/negatives
+   - **Mitigation**: Multi-layer detection, human review
+
+2. **SFTP Access**
+   - **Risk**: Directory traversal
+   - **Mitigation**: Chrooted environment, path validation
+
+3. **Session Management**
+   - **Risk**: Session hijacking
+   - **Mitigation**: Secure cookies, token rotation
+
+### Incident Response Plan
+
+#### Security Incident Workflow
+1. **Detection**: Monitoring alerts, user reports
+2. **Assessment**: Severity evaluation, impact analysis
+3. **Containment**: Immediate threat mitigation
+4. **Investigation**: Root cause analysis
+5. **Recovery**: Service restoration, patches
+6. **Documentation**: Incident report, lessons learned
+
+#### Emergency Contacts
+- System Administrator: Immediate response
+- Database Administrator: Data integrity issues
+- Security Team: Breach investigation
+- Legal Team: Compliance matters
+
+## Compliance & Auditing
+
+### Data Protection
+
+#### GDPR Compliance
+- **Data Minimization**: Only collect necessary data
+- **Right to Access**: User data export functionality
+- **Right to Deletion**: Account deletion with data purging
+- **Data Portability**: Export in standard formats
+
+#### Audit Trail
+```typescript
+// Moderation action logging
+await prisma.moderationLog.create({
+  data: {
+    guildId: interaction.guildId!,
+    userId: target.id,
+    moderatorId: interaction.user.id,
+    action: 'BAN',
+    reason: reason,
+    timestamp: new Date(),
+    metadata: JSON.stringify({
+      deletedMessages: deleteDays,
+      ip: req.ip,
+      userAgent: req.headers['user-agent']
+    })
+  }
+})
+```
+
+### Security Auditing
+
+#### Regular Security Reviews
+- **Monthly**: Dependency updates, vulnerability scanning
+- **Quarterly**: Penetration testing, code review
+- **Annually**: Security architecture review, compliance audit
+
+#### Security Tools
+- **Dependency Scanning**: npm audit, Snyk
+- **Code Analysis**: ESLint security rules, SonarJS
+- **Runtime Security**: Helmet.js, CORS configuration
+- **Monitoring**: Winston logging, error tracking
+
+## Future Security Enhancements
+
+### Planned Improvements
+
+#### Advanced Rate Limiting
+- Redis-based distributed rate limiting
+- Adaptive rate limiting based on user behavior
+- Geographic rate limiting for high-risk regions
+
+#### Enhanced Monitoring
+- Real-time security dashboard
+- Anomaly detection for unusual patterns
+- Automated threat response
+
+#### Security Automation
+- Automated security testing in CI/CD
+- Dependency vulnerability alerts
+- Security patch deployment automation
+
+### Security Roadmap
+
+#### Phase 1 (Current)
+- ✅ Basic authentication with NextAuth.js
+- ✅ File upload validation
+- ✅ Content moderation system
+- ✅ Database security with Prisma
+
+#### Phase 2 (3-6 months)
+- 🔄 Advanced rate limiting with Redis
+- 🔄 Security monitoring dashboard
+- 🔄 Automated security testing
+
+#### Phase 3 (6-12 months)
+- 📋 WAF implementation
+- 📋 Advanced threat detection
+- 📋 Security incident automation
