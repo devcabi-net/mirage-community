@@ -13,11 +13,13 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
+  /* Reporter to use with verbose output */
   reporter: [
-    ['html'],
-    ['json', { outputFile: 'test-results/results.json' }],
-    ['junit', { outputFile: 'test-results/results.xml' }]
+    ['html', { outputFolder: 'test-results/playwright-report' }],
+    ['json', { outputFile: 'test-results/playwright-results.json' }],
+    ['junit', { outputFile: 'test-results/playwright-results.xml' }],
+    ['list'], // Provides verbose console output
+    ['github'] // GitHub Actions integration
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
@@ -32,6 +34,15 @@ export default defineConfig({
 
     /* Record video on failure */
     video: 'retain-on-failure',
+
+    /* Enhanced logging for debugging */
+    actionTimeout: 10000,
+    navigationTimeout: 30000,
+    
+    /* Verbose network logging */
+    launchOptions: {
+      // slowMo: 100, // Uncomment for debugging
+    },
   },
 
   /* Configure projects for major browsers */
@@ -78,5 +89,11 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000, // 2 minutes
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
+
+  /* Global setup and teardown */
+  globalSetup: './e2e/global-setup.ts',
+  globalTeardown: './e2e/global-teardown.ts',
 }) 

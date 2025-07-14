@@ -17,9 +17,22 @@ export default defineConfig({
       '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
       '**/e2e/**'
     ],
+    // Verbose output configuration
+    reporter: ['verbose', 'json', 'html'],
+    outputFile: {
+      json: './test-results/unit-test-results.json',
+      html: './test-results/unit-test-results.html'
+    },
+    // Enhanced logging for debugging
+    logLevel: 'info',
+    // Show test execution time
+    printConsoleTrace: true,
+    // Fail fast on first test failure (disabled for now)
+    bail: false,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
+      reportsDirectory: './test-results/coverage',
       exclude: [
         'coverage/**',
         'dist/**',
